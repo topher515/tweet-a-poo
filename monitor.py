@@ -1,8 +1,7 @@
 import sys
 import select
 import termios, fcntl, sys, os
-from twitter import Twitter, OAuth
-from twitter import *
+from twitter import Twitter, OAuth, oauth_dance, read_token_file
 import yaml
 import random
 from Tkinter import *
@@ -35,11 +34,11 @@ class SystemController(object):
 
     def handle_door_closing(self):
         prn("Door closing...")
-        #self.tweeter.tweet_enter()
+        self.tweeter.tweet_enter()
 
     def handle_door_opening(self):
         prn("Door opening...")
-        #self.tweeter.tweet_exit()
+        self.tweeter.tweet_exit()
 
     def handle_door_is_open(self):
         #prn("Door is open.")
@@ -125,12 +124,22 @@ def do_auth():
 
 
 class Tweeter(object):
-    def __init__(self):
+    def __init__(self,async=True):
+        self.async = async
         self.enter_library = None
         self.exit_library = None
-        self.twitter = Twitter(auth=OAuth(OAUTH_TOKEN, 
-                        OAUTH_SECRET, CONSUMER_KEY, CONSUMER_SECRET))
+        self.twitter = Twitter(auth=self.get_oauth())
         self.load_tweet_library()
+
+    def get_oauth(self):
+        MY_TWITTER_CREDS = os.path.expanduser('~/.my_app_credentials')
+        if not os.path.exists(MY_TWITTER_CREDS):
+            oauth_dance("WarehouseShower", CONSUMER_KEY, CONSUMER_SECRET,
+                        MY_TWITTER_CREDS)
+
+        oauth_token, oauth_secret = read_token_file(MY_TWITTER_CREDS)
+
+        return OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_SECRET)
 
     def load_tweet_library(self):
         # TODO: Pull from http://raw.github.com/topher515/tweet-a-poo/master/tweets/enter.yml
@@ -140,7 +149,14 @@ class Tweeter(object):
             self.exit_library = yaml.load(exit_fp.read())
 
     def _tweet(self, msg):
-        self.twitter.statuses.update(status=msg)
+        def do_tweet():
+            print "Sending tweet: '%s'" % msg
+            self.twitter.statuses.update(status=msg)
+
+        if self.async:
+            threading.Thread(target=do_tweet).start()
+        else:
+            return do_tweet()
 
     def tweet_enter(self):
         return self._tweet(random.choice(self.enter_library))
