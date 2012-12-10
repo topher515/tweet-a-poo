@@ -4,21 +4,79 @@ import termios, fcntl, sys, os
 from twitter import Twitter, OAuth
 import yaml
 import random
+import requests
+from datetime import datetime, timedelta
+import threading
+import time
 
 from secrets import CONSUMER_KEY, CONSUMER_SECRET
 
 # see "Authentication" section below for tokens and keys
 
 
+DOOR_CLOSED = 0
+DOOR_OPEN = 1
+
 
 def main():
-    with KeyPressReader() as k:
+    SystemController().watch()
+
+
+class SystemController(object):
+    def __init__(self):
+        self.doorwatcher = DoorWatcher()
+        self.door_state = None
+        #self.tweeter = Tweeter()
+
+    def handle_door_closing(self):
+        print "Door closing..."
+        #self.tweeter.tweet_enter()
+
+    def handle_door_opening(self):
+        print "Door opening..."
+        #self.tweeter.tweet_exit()
+
+    def handle_door_is_open(self):
+        print "Door is open."
+        if self.door_state == DOOR_CLOSED:
+            self.handle_door_opening()
+        self.door_state = DOOR_OPEN
+
+    def handle_door_is_closed(self):
+        print "Door is closed."
+        if self.door_state == DOOR_OPEN:
+            self.handle_door_closing()
+        self.door_state = DOOR_CLOSED
+
+    def sleep(self):
+        time.sleep(0.25)
+
+    def watch(self):
+        self.doorwatcher.start() # Start watching
         while True:
-            key = k.read_single_keypress()
+            self.sleep()
+            if not self.doorwatcher.last_door_signal:
+                continue
+            if datetime.now() - self.doorwatcher.last_door_signal > timedelta(seconds=1):
+                self.handle_door_is_open()
+            else:
+                self.handle_door_is_closed()
+
+
+
+class DoorWatcher(threading.Thread):
+    def __init__(self,*args,**kwargs):
+        self.keywatcher = KeyPressReader()
+        self.last_door_signal = None
+        super(DoorWatcher,self).__init__(*args,**kwargs)
+
+    def run(self):
+        while True:
+            key = self.keywatcher.read_single_keypress()
             if key == 'q':
                 break
-            else:
-                print key
+            elif key == ' ':
+                self.last_door_signal = datetime.now()
 
 
 class Tweeter(object):
@@ -30,9 +88,10 @@ class Tweeter(object):
         self.load_tweet_library()
 
     def load_tweet_library(self):
-        with open('enter.yml','r') as enter_fp:
+        # TODO: Pull from http://raw.github.com/topher515/tweet-a-poo/master/tweets/enter.yml
+        with open('tweets/enter.yml','r') as enter_fp:
             self.enter_library = yaml.load(enter_fp.read())
-        with open('exit.yml','r') as exit_fp:
+        with open('tweets/exit.yml','r') as exit_fp:
             self.exit_library = yaml.load(exit_fp.read())
 
     def _tweet(self, msg):
@@ -92,50 +151,6 @@ class KeyPressReader(object):
         return ret
 
 
-def read_single_keypress():
-    """Waits for a single keypress on stdin.
-
-    This is a silly function to call if you need to do it a lot because it has
-    to store stdin's current setup, setup stdin for reading single keystrokes
-    then read the single keystroke then revert stdin back after reading the
-    keystroke.
-
-    Returns the character of the key that was pressed (zero on
-    KeyboardInterrupt which can happen when a signal gets handled)
-
-    """
-    import termios, fcntl, sys, os
-    fd = sys.stdin.fileno()
-    # save old state
-    flags_save = fcntl.fcntl(fd, fcntl.F_GETFL)
-    attrs_save = termios.tcgetattr(fd)
-    # make raw - the way to do this comes from the termios(3) man page.
-    attrs = list(attrs_save) # copy the stored version to update
-    # iflag
-    attrs[0] &= ~(termios.IGNBRK | termios.BRKINT | termios.PARMRK 
-                  | termios.ISTRIP | termios.INLCR | termios. IGNCR 
-                  | termios.ICRNL | termios.IXON )
-    # oflag
-    attrs[1] &= ~termios.OPOST
-    # cflag
-    attrs[2] &= ~(termios.CSIZE | termios. PARENB)
-    attrs[2] |= termios.CS8
-    # lflag
-    attrs[3] &= ~(termios.ECHONL | termios.ECHO | termios.ICANON
-                  | termios.ISIG | termios.IEXTEN)
-    termios.tcsetattr(fd, termios.TCSANOW, attrs)
-    # turn off non-blocking
-    fcntl.fcntl(fd, fcntl.F_SETFL, flags_save & ~os.O_NONBLOCK)
-    # read a single keystroke
-    try:
-        ret = sys.stdin.read(1) # returns a single character
-    except KeyboardInterrupt: 
-        ret = 0
-    finally:
-        # restore old state
-        termios.tcsetattr(fd, termios.TCSAFLUSH, attrs_save)
-        fcntl.fcntl(fd, fcntl.F_SETFL, flags_save)
-    return ret
 
 if __name__ == '__main__':
     main()
