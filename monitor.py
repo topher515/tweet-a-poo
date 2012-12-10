@@ -2,17 +2,22 @@ import sys
 import select
 import termios, fcntl, sys, os
 from twitter import Twitter, OAuth
+from twitter import *
 import yaml
 import random
-import requests
+from Tkinter import *
+
 from datetime import datetime, timedelta
 import threading
 import time
 
-from secrets import CONSUMER_KEY, CONSUMER_SECRET
+from secrets import CONSUMER_KEY, CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_SECRET
 
 # see "Authentication" section below for tokens and keys
 
+def prn(msg):
+    print msg
+    sys.stdout.flush()
 
 DOOR_CLOSED = 0
 DOOR_OPEN = 1
@@ -26,24 +31,24 @@ class SystemController(object):
     def __init__(self):
         self.doorwatcher = DoorWatcher()
         self.door_state = None
-        #self.tweeter = Tweeter()
+        self.tweeter = Tweeter()
 
     def handle_door_closing(self):
-        print "Door closing..."
+        prn("Door closing...")
         #self.tweeter.tweet_enter()
 
     def handle_door_opening(self):
-        print "Door opening..."
+        prn("Door opening...")
         #self.tweeter.tweet_exit()
 
     def handle_door_is_open(self):
-        print "Door is open."
+        #prn("Door is open.")
         if self.door_state == DOOR_CLOSED:
             self.handle_door_opening()
         self.door_state = DOOR_OPEN
 
     def handle_door_is_closed(self):
-        print "Door is closed."
+        #prn("Door is closed.")
         if self.door_state == DOOR_OPEN:
             self.handle_door_closing()
         self.door_state = DOOR_CLOSED
@@ -52,31 +57,71 @@ class SystemController(object):
         time.sleep(0.25)
 
     def watch(self):
-        self.doorwatcher.start() # Start watching
-        while True:
-            self.sleep()
-            if not self.doorwatcher.last_door_signal:
-                continue
-            if datetime.now() - self.doorwatcher.last_door_signal > timedelta(seconds=1):
-                self.handle_door_is_open()
-            else:
-                self.handle_door_is_closed()
+        prn("Watching door...")
+
+        def poll():
+            while True:
+                if self.doorwatcher.stopped:
+                    break
+                self.sleep()
+                if not self.doorwatcher.last_door_signal:
+                    continue
+                if datetime.now() - self.doorwatcher.last_door_signal > timedelta(seconds=1):
+                    self.handle_door_is_open()
+                else:
+                    self.handle_door_is_closed()
+
+        poller = threading.Thread(target=poll)
+        poller.start()
+
+        self.doorwatcher.run(self)
 
 
 
-class DoorWatcher(threading.Thread):
-    def __init__(self,*args,**kwargs):
-        self.keywatcher = KeyPressReader()
+class DoorWatcher(object):
+    def __init__(self):
         self.last_door_signal = None
-        super(DoorWatcher,self).__init__(*args,**kwargs)
+        self.stopped = False
 
-    def run(self):
-        while True:
-            key = self.keywatcher.read_single_keypress()
-            if key == 'q':
-                break
-            elif key == ' ':
+    def run(self, poller):
+        root = Tk()
+        self.last_door_signal = None
+
+        def handle_die():
+            self.stopped = True
+            root.destroy()
+
+        def key(event):
+            if event.char == ' ':
+                root.bell()
                 self.last_door_signal = datetime.now()
+
+        def callback(event):
+            frame.focus_set()
+
+        frame = Frame(root, width=100, height=100)
+        frame.bind("<Key>", key)
+        frame.bind("<Button-1>", callback)
+        frame.pack()
+
+        root.protocol('WM_DELETE_WINDOW', handle_die)
+        root.mainloop()
+
+
+
+def do_auth():
+    MY_TWITTER_CREDS = os.path.expanduser('~/.my_app_credentials')
+    print read_token_file(MY_TWITTER_CREDS)
+
+    # if not os.path.exists(MY_TWITTER_CREDS):
+    #     oauth_dance("My App Name", CONSUMER_KEY, CONSUMER_SECRET,
+    #                 MY_TWITTER_CREDS)
+
+    # twitter = Twitter(auth=OAuth(
+    #     oauth_token, oauth_token_secret, CONSUMER_KEY, CONSUMER_SECRET))
+
+    # # Now work with Twitter
+    # twitter.statuses.update('Hello, world!')
 
 
 class Tweeter(object):
@@ -97,7 +142,6 @@ class Tweeter(object):
     def _tweet(self, msg):
         self.twitter.statuses.update(status=msg)
 
-
     def tweet_enter(self):
         return self._tweet(random.choice(self.enter_library))
 
@@ -106,12 +150,20 @@ class Tweeter(object):
 
 
 
-class KeyPressReader(object):
+class KeyPressReader_(object):
 
     def __init__(self):
         self.attrs_save = None
         self.flags_save = None
         self.fd = None
+        self.flush_thread = threading.Thread(target=self.flush_stdin)
+        self.flush_thread.start()
+
+    def flush_stdin(self):
+        while True:
+            time.sleep(0.1)
+            prn("Trying to lush stdin")
+            sys.stdin.flush()
 
     def __enter__(self):
         self.fd = sys.stdin.fileno()
