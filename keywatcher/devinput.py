@@ -27,9 +27,10 @@ class DoorWatcher(object):
 
             if event.type == ecodes.EV_KEY:
                 logging.debug(categorize(event))
-                if event.code == ecodes.KEY_SPACE and event.value == 0: # value == 0 is up
-                    self.last_door_signal = datetime.now()
-                    
+                if event.code == ecodes.KEY_SPACE:
+                    if event.value in (0, 2): # 0 is up 2 is hold
+                        self.last_door_signal = datetime.now()
+
 
     def run(self, poller):
         try:
