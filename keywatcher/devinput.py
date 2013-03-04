@@ -19,9 +19,8 @@ class DoorWatcher(object):
             raise IOError("Unable to find Arduino input device")
 
 
-
     def run(self, poller):
-        for event in self.dev.read_loop():
+        for event in self.device.read_loop():
             if self.stopped:
                 print "Exiting key read loop..."
                 break
