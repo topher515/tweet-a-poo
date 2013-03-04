@@ -155,7 +155,7 @@ class Tweeter(object):
 
 if __name__ == '__main__':
     args = sys.argv[1:]
-    if len(args) > 0:
+    if len(args) == 0:
         main()
     else:
         if args[0] == "dry_run":
