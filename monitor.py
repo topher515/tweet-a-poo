@@ -1,11 +1,8 @@
 import sys
-import select
 import termios, fcntl, sys, os
 from twitter import Twitter, OAuth, oauth_dance, read_token_file
 import yaml
 import random
-from Tkinter import *
-
 from datetime import datetime, timedelta
 import threading
 import time
@@ -22,13 +19,19 @@ DOOR_CLOSED = 0
 DOOR_OPEN = 1
 
 
-def main():
-    SystemController().watch()
+def main(platform="linux"):
+
+    if platform == "linux":
+        from keywatcher.devinput import DoorWatcher
+    elif platform == "darwin":
+        from keywatcher.tk import DoorWatcher
+    
+    SystemController(DoorWatcherClass=DoorWatcher).watch()
 
 
 class SystemController(object):
-    def __init__(self):
-        self.doorwatcher = DoorWatcher()
+    def __init__(self, DoorWatcherClass):
+        self.doorwatcher = DoorWatcherClass()
         self.door_state = None
         self.tweeter = Tweeter()
 
@@ -76,44 +79,6 @@ class SystemController(object):
         self.doorwatcher.run(self)
 
 
-
-class TkDoorWatcher(object):
-    def __init__(self):
-        self.last_door_signal = None
-        self.stopped = False
-
-    def run(self, poller):
-        root = Tk()
-        self.last_door_signal = None
-
-        def handle_die():
-            self.stopped = True
-            root.destroy()
-
-        def key(event):
-            if event.char == ' ':
-                root.bell()
-                self.last_door_signal = datetime.now()
-
-        def callback(event):
-            frame.focus_set()
-
-        frame = Frame(root, width=100, height=100)
-        frame.bind("<Key>", key)
-        frame.bind("<Button-1>", callback)
-        frame.pack()
-
-        root.protocol('WM_DELETE_WINDOW', handle_die)
-        root.mainloop()
-
-
-class DevInputDoorWatcher(object):
-    def __init__(self):
-        pass
-
-
-class DoorWatcher(TkDoorWatcher):
-    pass
 
 
 def do_auth():
