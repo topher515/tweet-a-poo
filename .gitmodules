@@ -1,0 +1,3 @@
+[submodule "logkeys"]
+	path = logkeys
+	url = https://code.google.com/p/logkeys/

@@ -77,7 +77,7 @@ class SystemController(object):
 
 
 
-class DoorWatcher(object):
+class TkDoorWatcher(object):
     def __init__(self):
         self.last_door_signal = None
         self.stopped = False
@@ -106,6 +106,14 @@ class DoorWatcher(object):
         root.protocol('WM_DELETE_WINDOW', handle_die)
         root.mainloop()
 
+
+class DevInputDoorWatcher(object):
+    def __init__(self):
+        pass
+
+
+class DoorWatcher(TkDoorWatcher):
+    pass
 
 
 def do_auth():
