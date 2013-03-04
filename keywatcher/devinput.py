@@ -1,6 +1,6 @@
 from evdev import InputDevice, list_devices, categorize, ecodes
 import logging
-from datetime import datetiem, timedelta
+from datetime import datetime, timedelta
 
 class DoorWatcher(object):
     def __init__(self):
