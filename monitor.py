@@ -16,14 +16,16 @@ DOOR_CLOSED = 0
 DOOR_OPEN = 1
 
 
-def main(platform="linux"):
+def main(platform="linux", dry_run=False):
 
     if platform == "linux":
         from keywatcher.devinput import DoorWatcher
     elif platform == "darwin":
         from keywatcher.tk import DoorWatcher
     
-    SystemController(DoorWatcherClass=DoorWatcher).watch()
+    cont = SystemController(DoorWatcherClass=DoorWatcher)
+    cont.tweeter.dry_run = dry_run
+    cont.watch()
 
 
 class SystemController(object):
@@ -104,6 +106,8 @@ class Tweeter(object):
         self.last_enter_tweet_hash = None
         self.last_exit_tweet_hash = None
 
+        self.dry_run = False
+
     def get_oauth(self):
         MY_TWITTER_CREDS = os.path.expanduser('~/.my_app_credentials')
         if not os.path.exists(MY_TWITTER_CREDS):
@@ -126,7 +130,8 @@ class Tweeter(object):
 
         def do_tweet():
             logging.info("Sending tweet: '%s'" % msg)
-            self.twitter.statuses.update(status=msg)
+            if not self.dry_run:
+                self.twitter.statuses.update(status=msg)
 
         if self.async:
             threading.Thread(target=do_tweet).start()
@@ -142,11 +147,18 @@ class Tweeter(object):
         return tweet
 
     def tweet_enter(self):
-        return self._tweet(_select_tweet("enter"))
+        return self._tweet(self._select_tweet("enter"))
 
     def tweet_exit(self):
-        return self._tweet(_select_tweet("exit"))
+        return self._tweet(self._select_tweet("exit"))
 
 
 if __name__ == '__main__':
-    main()
+    args = sys.argv[1:]
+    if len(args) > 0:
+        main()
+    else:
+        if args[0] == "dry_run":
+            main(dry_run=True)
+        else:
+            print "I dont understand %s" % args[0]
