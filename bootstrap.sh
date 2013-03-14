@@ -18,7 +18,7 @@ file=$(pwd)/ve/run/supervisor.sock\n\
 \n\
 [supervisord]\n\
 logfile = /var/log/supervisord.log\n\
-pidfile=$(pwd)/ve/run/supervisord.pid
+pidfile=$(pwd)/ve/run/supervisord.pid\n\
 user=root\n\
 \n\
 [rpcinterface:supervisor]\n\
@@ -28,7 +28,7 @@ supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 serverurl=unix://$(pwd)/ve/run/supervisor.sock\n\
 \n\
 [program:monitor_and_tweet]\n\
-command=$(pwd)/monitor.py\n\
+command=$(pwd)/monitor.py dry_run\n\
 autostart=true\n\
 autorestart=true\n\
 startsecs=5\n\
