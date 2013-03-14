@@ -1,3 +1,4 @@
 PyYAML==3.10
 twitter==1.9.0
 evdev==0.3.0
+supervisor==3.0b1
