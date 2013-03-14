@@ -6,11 +6,10 @@ import time
 class DoorWatcher(object):
     def __init__(self):
         self.device = None
+        self.wait_for_device = True
         self.setup_device()
         self.last_door_signal = None
         self.stopped = False
-        self.wait_for_device = True
-
 
     def setup_device(self):
         while not self.device:
