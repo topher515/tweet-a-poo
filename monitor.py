@@ -10,7 +10,7 @@ import threading
 import time
 import logging
 #logging.basicConfig(filename=os.path.expanduser("~/tweet-a-poo.log"), filemode='a', level=logging.DEBUG)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 from secrets import CONSUMER_KEY, CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_SECRET
 
@@ -132,7 +132,7 @@ class Tweeter(object):
     def _tweet(self, msg):
 
         def do_tweet():
-            logging.info("Sending tweet: '%s'" % msg)
+            logging.info("Sending tweet%s: '%s'", " (not really)" if self.dry_run else "", msg)
             if not self.dry_run:
                 self.twitter.statuses.update(status=msg)
 
