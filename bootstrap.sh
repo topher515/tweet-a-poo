@@ -7,7 +7,10 @@ pip install -r requirements.pip
 
 # Setup supervisor
 mkdir -p ve/etc
-printf "[supervisorctl]\n\
+printf "[supervisord]\n\
+logfile = /var/log/supervisord.log\n\
+\n\
+[supervisorctl]\n\
 serverurl=unix:///tmp/supervisor.sock\n\
 \n\
 [program:monitor_and_tweet]\n\
