@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 import threading
 import time
 import logging
-logging.basicConfig(filename=os.path.expanduser("~/tweet-a-poo.log"), filemode='a', level=logging.DEBUG)
+#logging.basicConfig(filename=os.path.expanduser("~/tweet-a-poo.log"), filemode='a', level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 from secrets import CONSUMER_KEY, CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_SECRET
 
