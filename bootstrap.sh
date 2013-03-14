@@ -7,8 +7,11 @@ pip install -r requirements.pip
 
 # Setup supervisor
 mkdir -p ve/etc
-printf "[program:monitor_and_tweet]\n\
-command=$(pwd)monitor.py\n\
+printf "[supervisorctl]\n\
+serverurl=unix:///tmp/supervisor.sock\n\
+\n\
+[program:monitor_and_tweet]\n\
+command=$(pwd)/monitor.py\n\
 autostart=true\n\
 autorestart=true\n\
 startsecs=5\n\
