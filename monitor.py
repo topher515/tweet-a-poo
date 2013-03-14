@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import termios, fcntl, sys, os
 from twitter import Twitter, OAuth, oauth_dance, read_token_file

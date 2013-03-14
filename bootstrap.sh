@@ -5,13 +5,25 @@ virtualenv ve
 source ve/bin/activate
 pip install -r requirements.pip
 
+sudo touch /var/log/supervisord.log
+sudo chmod o+w /var/log/supervisord.log
+sudo touch /var/log/monitor_and_tweet.log
+sudo chmod o+w /var/log/monitor_and_tweet.log
+
 # Setup supervisor
 mkdir -p ve/etc
-printf "[supervisord]\n\
+mkdir -p ve/run
+printf "[unix_http_server]\n\
+file=$(pwd)/ve/run/supervisor.sock\n\
+\n\
+[supervisord]\n\
 logfile = /var/log/supervisord.log\n\
+user=root\n\
+[rpcinterface:supervisor]\n\
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface\n\
 \n\
 [supervisorctl]\n\
-serverurl=unix:///tmp/supervisor.sock\n\
+serverurl=unix://$(pwd)/ve/run/supervisor.sock\n\
 \n\
 [program:monitor_and_tweet]\n\
 command=$(pwd)/monitor.py\n\
