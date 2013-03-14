@@ -1,6 +1,7 @@
 from evdev import InputDevice, list_devices, categorize, ecodes
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
+import time
 
 class DoorWatcher(object):
     def __init__(self):
@@ -8,16 +9,22 @@ class DoorWatcher(object):
         self.setup_device()
         self.last_door_signal = None
         self.stopped = False
+        self.wait_for_device = True
 
 
     def setup_device(self):
-        for dev_str in list_devices():
-            dev = InputDevice(dev_str)
-            if "arduino" in dev.name.lower():
-                self.device = dev
-                break
-        else:
-            raise IOError("Unable to find Arduino input device")
+        while not self.device:
+            for dev_str in list_devices():
+                dev = InputDevice(dev_str)
+                if "arduino" in dev.name.lower():
+                    self.device = dev
+                    break
+            else:
+                if self.wait_for_device:
+                    logging.warning("Waiting for arduino device...")
+                    time.sleep(1)
+                else:
+                    raise IOError("Unable to find Arduino input device")
 
 
     def _run(self, poller):
