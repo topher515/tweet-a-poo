@@ -18,7 +18,7 @@ file=$(pwd)/ve/run/supervisor.sock\n\
 \n\
 [supervisord]\n\
 logfile = /var/log/supervisord.log\n\
-pidfile=$CWD/ve/run/supervisord.pid
+pidfile=$(pwd)/ve/run/supervisord.pid
 user=root\n\
 \n\
 [rpcinterface:supervisor]\n\
